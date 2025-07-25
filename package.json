@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "build": "npm --prefix frontend run build",
-    "dev": "cd frontend && npm run dev",
-    "vercel-build": "cd frontend && npm run build",
-    "start": "cd frontend && npm run preview",
+    "dev": "cd frontend && npx vite",
+    "vercel-build": "cd frontend && npx tsc --noEmit && npx vite build",
+    "start": "cd frontend && npx vite preview",
     "postinstall": "cd frontend && npm ci"
   },
   "dependencies": {
