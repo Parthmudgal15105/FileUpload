@@ -38,11 +38,11 @@ VITE_MAX_FILE_SIZE=10737418240
 VITE_CHUNK_SIZE=1048576
 ```
 
-**Note**: The project's `vercel-build` script is configured to:
+**Note**: The project's build is configured in `vercel.json` to:
 ```bash
-cd frontend && npm ci && npx tsc --noEmit && npx vite build
+cd frontend && npm ci && npm run build
 ```
-This ensures all dependencies are properly installed and commands use `npx` to access local packages.
+This ensures dependencies are installed in the frontend directory and the build runs in the correct context.
 
 ### 3. Push to GitHub
 ```bash
@@ -75,9 +75,9 @@ vercel --prod
 4. Configure project settings:
    - **Framework Preset**: Other (or None)
    - **Root Directory**: `./`
-   - **Build Command**: `npm run vercel-build`
+   - **Build Command**: (handled by vercel.json)
    - **Output Directory**: `frontend/dist`
-   - **Install Command**: (leave empty, handled by build script)
+   - **Install Command**: (handled by vercel.json)
 
 ### 5. Configure Environment Variables in Vercel
 In your Vercel dashboard:
@@ -144,10 +144,11 @@ In your Vercel dashboard:
 
 ### Common Vercel Build Issues
 - **"Could not read package.json" error**: Ensure vercel.json points to correct build directory
-- **Module resolution errors**: Use `framework: null` in vercel.json for custom builds
+- **Module resolution errors**: Use proper build configuration in vercel.json instead of complex scripts
 - **TypeScript compilation errors**: Verify tsconfig.json settings are compatible with Vercel's Node.js environment
-- **"vite: command not found" error**: Use `npx vite build` instead of `vite build` in build scripts
-- **Build script execution issues**: Ensure build commands use `npx` to access locally installed packages
+- **"vite: command not found" error**: Ensure build runs from the frontend directory where vite is installed
+- **Vite config module resolution**: Use simple build commands instead of complex npx chains
+- **Build script execution issues**: Let Vercel handle dependency installation and building automatically
 
 ### Runtime Errors
 - Check Vercel function logs in dashboard
