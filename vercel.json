@@ -1,0 +1,54 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/$1"
+    }
+  ],
+  "functions": {
+    "api/upload/init.ts": {
+      "maxDuration": 30
+    },
+    "api/upload/chunk.ts": {
+      "maxDuration": 60
+    },
+    "api/upload/status/[uploadId].ts": {
+      "maxDuration": 10
+    },
+    "api/upload/resume/[uploadId].ts": {
+      "maxDuration": 10
+    },
+    "api/upload/resume.ts": {
+      "maxDuration": 10
+    },
+    "api/uploads.ts": {
+      "maxDuration": 10
+    },
+    "api/download/[uploadId].ts": {
+      "maxDuration": 60
+    },
+    "api/upload/[uploadId].ts": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/frontend/index.html"
+    }
+  ]
+}

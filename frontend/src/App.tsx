@@ -1,4 +1,3 @@
-import React from 'react';
 import FileUploader from './components/FileUploader';
 import UploadsList from './components/UploadsList';
 import ThemeToggle from './components/ThemeToggle';

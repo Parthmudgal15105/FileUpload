@@ -1,5 +1,5 @@
 export const config = {
-  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api',
+  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || '/api',
   MAX_FILE_SIZE: parseInt(import.meta.env.VITE_MAX_FILE_SIZE || '10737418240'), // 10GB
   CHUNK_SIZE: parseInt(import.meta.env.VITE_CHUNK_SIZE || '1048576'), // 1MB
   ALLOWED_FILE_TYPES: [
