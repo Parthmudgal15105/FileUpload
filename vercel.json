@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run dev",
+  "buildCommand": "cd frontend && npm ci && npx tsc --noEmit && npx vite build",
   "outputDirectory": "frontend/dist",
   "installCommand": "npm install",
   "routes": [
