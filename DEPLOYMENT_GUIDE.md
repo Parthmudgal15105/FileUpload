@@ -38,6 +38,12 @@ VITE_MAX_FILE_SIZE=10737418240
 VITE_CHUNK_SIZE=1048576
 ```
 
+**Note**: The project's `vercel-build` script is configured to:
+```bash
+cd frontend && npm ci && npx tsc --noEmit && npx vite build
+```
+This ensures all dependencies are properly installed and commands use `npx` to access local packages.
+
 ### 3. Push to GitHub
 ```bash
 git init
@@ -140,6 +146,8 @@ In your Vercel dashboard:
 - **"Could not read package.json" error**: Ensure vercel.json points to correct build directory
 - **Module resolution errors**: Use `framework: null` in vercel.json for custom builds
 - **TypeScript compilation errors**: Verify tsconfig.json settings are compatible with Vercel's Node.js environment
+- **"vite: command not found" error**: Use `npx vite build` instead of `vite build` in build scripts
+- **Build script execution issues**: Ensure build commands use `npx` to access locally installed packages
 
 ### Runtime Errors
 - Check Vercel function logs in dashboard
