@@ -17,8 +17,8 @@ execSync('npm ci', {
 // Skip TypeScript check for now to avoid dependency issues
 console.log('🚀 Building frontend...');
 try {
-  // Use simplified config
-  execSync('npx vite build --config vite.simple.config.js', { 
+  // Use local vite from root node_modules
+  execSync('node ../node_modules/vite/bin/vite.js build --config vite.simple.config.js', { 
     cwd: path.join(__dirname, 'frontend'), 
     stdio: 'inherit',
     env: {
