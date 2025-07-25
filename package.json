@@ -4,9 +4,10 @@
   "description": "Distributed File Upload System for Vercel",
   "main": "index.js",
   "scripts": {
-    "build": "cd frontend && npm run build",
+    "build": "cd frontend && npm install && npm run build",
     "dev": "cd frontend && npm run dev",
-    "vercel-build": "cd frontend && npm install && npm run build"
+    "vercel-build": "cd frontend && npm install && npm run build",
+    "start": "cd frontend && npm run preview"
   },
   "dependencies": {
     "@vercel/node": "^5.3.6",
