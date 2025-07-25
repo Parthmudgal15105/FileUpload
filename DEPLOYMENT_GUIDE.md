@@ -67,10 +67,11 @@ vercel --prod
 2. Click "New Project"
 3. Import your GitHub repository
 4. Configure project settings:
-   - **Framework Preset**: Other
+   - **Framework Preset**: Other (or None)
    - **Root Directory**: `./`
    - **Build Command**: `npm run vercel-build`
    - **Output Directory**: `frontend/dist`
+   - **Install Command**: (leave empty, handled by build script)
 
 ### 5. Configure Environment Variables in Vercel
 In your Vercel dashboard:
@@ -130,6 +131,15 @@ In your Vercel dashboard:
 - Ensure all TypeScript types are properly installed
 - Check that import paths are correct
 - Verify all dependencies are in `package.json`
+- **TypeScript Module Resolution Issues**: If you see errors like "Could not find a declaration file for module", ensure:
+  - All `@types/*` packages are installed in devDependencies
+  - TypeScript configuration uses proper module resolution
+  - Build command uses `tsc --noEmit` instead of `tsc -b`
+
+### Common Vercel Build Issues
+- **"Could not read package.json" error**: Ensure vercel.json points to correct build directory
+- **Module resolution errors**: Use `framework: null` in vercel.json for custom builds
+- **TypeScript compilation errors**: Verify tsconfig.json settings are compatible with Vercel's Node.js environment
 
 ### Runtime Errors
 - Check Vercel function logs in dashboard
