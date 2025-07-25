@@ -40,9 +40,29 @@ try {
 
   // Verify the build output
   if (!fs.existsSync(distDir)) {
-    console.log('⚠️ Dist directory not found after build. Creating minimal index.html...');
-    if (!fs.existsSync(distDir)) {
-      fs.mkdirSync(distDir, { recursive: true });
+    console.log('⚠️ Dist directory not found after build. Creating directory...');
+    fs.mkdirSync(distDir, { recursive: true });
+    
+    // Try building with the production config
+    console.log('🔄 Attempting build with production config...');
+    try {
+      execSync('npm run build -- --config vite.config.prod.ts', {
+        cwd: frontendDir,
+        stdio: 'inherit',
+        env: { ...process.env, NODE_ENV: 'production' }
+      });
+      
+      // Check if build succeeded this time
+      if (fs.existsSync(distDir) && fs.readdirSync(distDir).length > 0) {
+        console.log('✅ Production build completed successfully!');
+        
+        // Create a _redirects file for proper SPA routing in production
+        fs.writeFileSync(path.join(distDir, '_redirects'), '/* /index.html 200');
+        console.log('✅ Created _redirects file for SPA routing');
+        return;
+      }
+    } catch (error) {
+      console.error('❌ Production build also failed:', error.message);
     }
     
     // Create a minimal fallback page if build fails
@@ -78,6 +98,10 @@ try {
     console.log('✅ Created fallback index.html');
   } else {
     console.log('✅ Build completed successfully!');
+    
+    // Create a _redirects file for proper SPA routing in production
+    fs.writeFileSync(path.join(distDir, '_redirects'), '/* /index.html 200');
+    console.log('✅ Created _redirects file for SPA routing');
   }
 } catch (error) {
   console.error('❌ Build failed:', error.message);

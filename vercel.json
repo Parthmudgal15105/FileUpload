@@ -1,5 +1,5 @@
 {
-  "buildCommand": "node minimal-build.js",
+  "buildCommand": "node build-frontend.js",
   "outputDirectory": "frontend/dist",
   "installCommand": "npm install",
   "routes": [
@@ -9,7 +9,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/frontend/$1"
+      "dest": "/"
     }
   ]
 }

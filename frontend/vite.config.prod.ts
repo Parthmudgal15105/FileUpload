@@ -22,4 +22,14 @@ export default defineConfig({
   define: {
     'process.env.NODE_ENV': JSON.stringify('production'),
   },
+  base: '/',
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false
+      }
+    }
+  },
 })
