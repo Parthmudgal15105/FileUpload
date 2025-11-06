@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
-import { Upload, FileText, CheckCircle, XCircle, RotateCcw } from 'lucide-react';
+import { Upload, CheckCircle, XCircle, RotateCcw, Sparkles, X } from 'lucide-react';
 import { config, formatFileSize, isValidFileType } from '../config';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Progress } from './ui/progress';
 import { cn } from '../lib/utils';
+import { getFileIcon, getFileTypeColor } from '../lib/fileIcons';
+import { useToast } from './ui/toast';
 
 const API_BASE = config.API_BASE_URL;
 const CHUNK_SIZE = config.CHUNK_SIZE;
@@ -22,12 +23,14 @@ interface UploadProgress {
   };
   speed: string;
   eta: string;
+  fileSize: number;
 }
 
 const FileUploader: React.FC = () => {
   const [uploads, setUploads] = useState<Map<string, UploadProgress>>(new Map());
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useToast();
 
   // Calculate chunk hash
   const calculateChunkHash = async (chunk: Blob): Promise<string> => {
@@ -78,13 +81,13 @@ const FileUploader: React.FC = () => {
   const uploadFile = async (file: File) => {
     // Validate file type
     if (!isValidFileType(file.name)) {
-      alert(`File type not allowed. Allowed types: ${config.ALLOWED_FILE_TYPES.join(', ')}`);
+      showToast(`File type not allowed. Allowed types: ${config.ALLOWED_FILE_TYPES.join(', ')}`, 'error');
       return;
     }
 
     // Validate file size
     if (file.size > config.MAX_FILE_SIZE) {
-      alert(`File size exceeds maximum allowed size of ${formatFileSize(config.MAX_FILE_SIZE)}`);
+      showToast(`File size exceeds maximum allowed size of ${formatFileSize(config.MAX_FILE_SIZE)}`, 'error');
       return;
     }
 
@@ -112,10 +115,12 @@ const FileUploader: React.FC = () => {
           failed: []
         },
         speed: '0 MB/s',
-        eta: 'Calculating...'
+        eta: 'Calculating...',
+        fileSize: file.size
       };
 
       setUploads(prev => new Map(prev.set(uploadId, initialProgress)));
+      showToast(`Upload started: ${file.name}`, 'info');
 
       const startTime = Date.now();
       let uploadedChunks = 0;
@@ -207,6 +212,7 @@ const FileUploader: React.FC = () => {
           
           return new Map(prev.set(uploadId, updated));
         });
+        showToast(`Upload completed: ${file.name}`, 'success');
       } else {
         setUploads(prev => {
           const current = prev.get(uploadId);
@@ -219,11 +225,12 @@ const FileUploader: React.FC = () => {
           
           return new Map(prev.set(uploadId, updated));
         });
+        showToast(`Upload failed: ${file.name}`, 'error');
       }
 
     } catch (error) {
       console.error('Upload initialization failed:', error);
-      alert('Failed to start upload. Please check if the server is running.');
+      showToast('Failed to start upload. Please check if the server is running.', 'error');
     }
   };
 
@@ -278,155 +285,239 @@ const FileUploader: React.FC = () => {
     // Implementation would go here...
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-      <div className="mx-auto max-w-4xl space-y-6">
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-slate-900">File Upload</h1>
-          <p className="mt-2 text-slate-600">Upload your files with chunked upload technology</p>
-        </div>
+  // Remove upload from list
+  const removeUpload = (uploadId: string) => {
+    setUploads(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(uploadId);
+      return newMap;
+    });
+  };
 
-        {/* Upload Zone */}
-        <Card className="relative overflow-hidden">
-          <CardContent className="p-0">
-            <div
-              className={cn(
-                "group relative cursor-pointer border-2 border-dashed border-slate-300 bg-white transition-all duration-200 hover:border-primary hover:bg-slate-50",
-                isDragOver && "border-primary bg-primary/5"
-              )}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <div className="flex min-h-[200px] flex-col items-center justify-center space-y-4 p-8 text-center">
-                <div className={cn(
-                  "rounded-full bg-slate-100 p-6 transition-colors group-hover:bg-primary/10",
-                  isDragOver && "bg-primary/10"
-                )}>
-                  <Upload className={cn(
-                    "h-8 w-8 text-slate-400 transition-colors group-hover:text-primary",
-                    isDragOver && "text-primary"
-                  )} />
-                </div>
-                
-                <div className="space-y-2">
-                  <h3 className="text-lg font-semibold text-slate-900">
-                    {isDragOver ? "Drop your files here" : "Choose files or drag & drop"}
-                  </h3>
-                  <p className="text-sm text-slate-500">
-                    Supports chunked upload with automatic retry
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    Max file size: {formatFileSize(config.MAX_FILE_SIZE)}
-                  </p>
-                </div>
-                
-                <Button variant="outline" className="pointer-events-none">
-                  <Upload className="mr-2 h-4 w-4" />
-                  Select Files
-                </Button>
+  return (
+    <div className="space-y-6">
+      {/* Upload Zone Card */}
+      <Card className="relative overflow-hidden border-2 transition-all duration-300 hover:shadow-xl">
+        {/* Gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/20 dark:via-indigo-950/20 dark:to-purple-950/20 opacity-50" />
+        
+        <CardContent className="relative p-0">
+          <div
+            className={cn(
+              "group relative cursor-pointer border-2 border-dashed transition-all duration-300",
+              "bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm",
+              isDragOver 
+                ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 scale-[0.99]" 
+                : "border-gray-300 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-gray-50/50 dark:hover:bg-gray-800/50"
+            )}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <div className="flex min-h-[280px] flex-col items-center justify-center space-y-6 p-10 text-center">
+              {/* Upload Icon with animation */}
+              <div className={cn(
+                "relative rounded-full p-8 transition-all duration-300",
+                "bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40",
+                isDragOver && "scale-110 rotate-6",
+                "group-hover:scale-105"
+              )}>
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 opacity-0 group-hover:opacity-10 transition-opacity blur-xl" />
+                <Upload className={cn(
+                  "h-12 w-12 transition-all duration-300",
+                  isDragOver 
+                    ? "text-blue-600 dark:text-blue-400 animate-bounce" 
+                    : "text-blue-500 dark:text-blue-400 group-hover:text-blue-600 dark:group-hover:text-blue-300"
+                )} />
               </div>
               
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                className="absolute inset-0 h-full w-full opacity-0"
-                onChange={(e) => handleFileSelect(e.target.files)}
-              />
+              <div className="space-y-3">
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
+                  {isDragOver ? "Drop your files here" : "Upload Files"}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 max-w-md">
+                  {isDragOver 
+                    ? "Release to start uploading" 
+                    : "Drag and drop files here, or click to browse"
+                  }
+                </p>
+                <div className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-500">
+                  <Sparkles className="h-3 w-3" />
+                  <span>Chunked upload with auto-retry</span>
+                  <span>•</span>
+                  <span>Max {formatFileSize(config.MAX_FILE_SIZE)}</span>
+                </div>
+              </div>
+              
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="pointer-events-none border-2 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all"
+              >
+                <Upload className="mr-2 h-5 w-5" />
+                Choose Files
+              </Button>
             </div>
-          </CardContent>
-        </Card>
+            
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="absolute inset-0 h-full w-full opacity-0 cursor-pointer"
+              onChange={(e) => handleFileSelect(e.target.files)}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Upload Progress */}
-        {uploads.size > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Upload Progress
-              </CardTitle>
-              <CardDescription>
-                Track your file uploads in real-time
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {Array.from(uploads.values()).map(upload => (
-                <div key={upload.uploadId} className="space-y-3 rounded-lg border p-4">
-                  {/* File Header */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "rounded-full p-2",
-                        upload.status === 'completed' && "bg-green-100",
-                        upload.status === 'failed' && "bg-red-100",
-                        upload.status === 'uploading' && "bg-blue-100"
-                      )}>
-                        {upload.status === 'completed' && <CheckCircle className="h-4 w-4 text-green-600" />}
-                        {upload.status === 'failed' && <XCircle className="h-4 w-4 text-red-600" />}
-                        {upload.status === 'uploading' && <Upload className="h-4 w-4 text-blue-600 animate-pulse" />}
+      {/* Active Uploads */}
+      {uploads.size > 0 && (
+        <Card className="overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-b">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
+                  Active Uploads
+                </CardTitle>
+                <CardDescription>
+                  {uploads.size} {uploads.size === 1 ? 'file' : 'files'} uploading
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6 space-y-4">
+            {Array.from(uploads.values()).map(upload => {
+              const FileIcon = getFileIcon(upload.filename);
+              const gradientColor = getFileTypeColor(upload.filename);
+              
+              return (
+                <div 
+                  key={upload.uploadId} 
+                  className="group relative rounded-xl border bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 p-5 shadow-sm hover:shadow-md transition-all duration-300"
+                >
+                  {/* Progress background */}
+                  <div 
+                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/5 to-indigo-500/5 transition-all duration-300"
+                    style={{ width: `${upload.progress}%` }}
+                  />
+                  
+                  <div className="relative space-y-4">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-4 min-w-0 flex-1">
+                        {/* File Icon */}
+                        <div className={cn(
+                          "flex-shrink-0 rounded-lg p-3 bg-gradient-to-br shadow-lg",
+                          gradientColor
+                        )}>
+                          <FileIcon className="h-6 w-6 text-white" />
+                        </div>
+                        
+                        {/* File Info */}
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                            {upload.filename}
+                          </h4>
+                          <div className="flex items-center gap-3 mt-1 text-sm text-gray-600 dark:text-gray-400">
+                            <span>{formatFileSize(upload.fileSize)}</span>
+                            <span>•</span>
+                            <span>{upload.chunks.uploaded}/{upload.chunks.total} chunks</span>
+                            {upload.speed !== '0 MB/s' && (
+                              <>
+                                <span>•</span>
+                                <span className="text-blue-600 dark:text-blue-400 font-medium">{upload.speed}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-slate-900">{upload.filename}</p>
-                        <p className="text-sm text-slate-500">
-                          {upload.chunks.uploaded}/{upload.chunks.total} chunks • {upload.speed}
-                        </p>
+                      
+                      {/* Status Badge & Actions */}
+                      <div className="flex items-center gap-2">
+                        <div className={cn(
+                          "flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-all",
+                          upload.status === 'completed' && "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
+                          upload.status === 'failed' && "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
+                          upload.status === 'uploading' && "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+                        )}>
+                          {upload.status === 'completed' && <CheckCircle className="h-3 w-3" />}
+                          {upload.status === 'failed' && <XCircle className="h-3 w-3" />}
+                          {upload.status === 'uploading' && (
+                            <div className="h-2 w-2 bg-current rounded-full animate-pulse" />
+                          )}
+                          <span className="capitalize">{upload.status}</span>
+                        </div>
+                        
+                        {(upload.status === 'completed' || upload.status === 'failed') && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removeUpload(upload.uploadId)}
+                            className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
-                      <span className={cn(
-                        "rounded-full px-2 py-1 text-xs font-medium",
-                        upload.status === 'completed' && "bg-green-100 text-green-700",
-                        upload.status === 'failed' && "bg-red-100 text-red-700",
-                        upload.status === 'uploading' && "bg-blue-100 text-blue-700"
-                      )}>
-                        {upload.status}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {/* Progress Bar */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-600">{upload.progress}% complete</span>
-                      <span className="text-slate-500">ETA: {upload.eta}</span>
-                    </div>
-                    <Progress value={upload.progress} className="h-2" />
-                  </div>
-                  
-                  {/* Failed Chunks */}
-                  {upload.chunks.failed.length > 0 && (
-                    <div className="rounded-md bg-red-50 p-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-red-800">
-                            Failed chunks: {upload.chunks.failed.join(', ')}
-                          </p>
-                          <p className="text-xs text-red-600">
-                            {upload.chunks.failed.length} chunks failed to upload
-                          </p>
-                        </div>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => retryUpload(upload.uploadId)}
-                          className="border-red-200 text-red-700 hover:bg-red-50"
-                        >
-                          <RotateCcw className="mr-1 h-3 w-3" />
-                          Retry
-                        </Button>
+                    {/* Progress Bar */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-700 dark:text-gray-300 font-medium">
+                          {upload.progress}% complete
+                        </span>
+                        <span className="text-gray-500 dark:text-gray-400">
+                          ETA: {upload.eta}
+                        </span>
+                      </div>
+                      <div className="relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div 
+                          className={cn(
+                            "absolute inset-y-0 left-0 rounded-full transition-all duration-300 bg-gradient-to-r from-blue-500 to-indigo-600",
+                            upload.status === 'uploading' && "animate-pulse"
+                          )}
+                          style={{ width: `${upload.progress}%` }}
+                        />
                       </div>
                     </div>
-                  )}
+                    
+                    {/* Failed Chunks Warning */}
+                    {upload.chunks.failed.length > 0 && (
+                      <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-start gap-3">
+                            <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium text-red-900 dark:text-red-200">
+                                Upload Failed
+                              </p>
+                              <p className="text-xs text-red-700 dark:text-red-400 mt-0.5">
+                                {upload.chunks.failed.length} chunk{upload.chunks.failed.length > 1 ? 's' : ''} failed to upload
+                              </p>
+                            </div>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => retryUpload(upload.uploadId)}
+                            className="border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 flex-shrink-0"
+                          >
+                            <RotateCcw className="mr-2 h-3 w-3" />
+                            Retry
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-      </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

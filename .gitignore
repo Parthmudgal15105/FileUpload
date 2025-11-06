@@ -22,3 +22,34 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Backend generated files
+backend/uploads/
+backend/chunks/
+backend/dist/
+backend/uploads.db
+backend/*.db
+
+# Frontend build
+frontend/dist/
+
+# Vercel (deprecated)
+.vercel
+api/
+lib/
+vercel.json
+*.vercel.json
+
+# TypeScript
+*.tsbuildinfo
+.tsbuildinfo
+
+# Build scripts (deprecated)
+build*.js
+build.sh
+minimal-build.js

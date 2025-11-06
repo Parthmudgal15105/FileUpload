@@ -5,19 +5,21 @@ import {
   Trash2, 
   Play, 
   RefreshCw, 
-  FileText, 
   Clock, 
   CheckCircle, 
   XCircle, 
   Pause,
   Calendar,
-  HardDrive
+  HardDrive,
+  Loader2
 } from 'lucide-react';
 import { config, formatFileSize } from '../config';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { cn } from '../lib/utils';
+import { getFileIcon, getFileTypeColor } from '../lib/fileIcons';
+import { useToast } from './ui/toast';
 
 const API_BASE = config.API_BASE_URL;
 
@@ -37,6 +39,7 @@ const UploadsList: React.FC = () => {
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   // Fetch uploads from backend
   const fetchUploads = useCallback(async () => {
@@ -61,10 +64,11 @@ const UploadsList: React.FC = () => {
   const resumeUpload = async (uploadId: string) => {
     try {
       await axios.post(`${API_BASE}/upload/resume`, { uploadId });
+      showToast('Upload resumed successfully', 'success');
       setTimeout(fetchUploads, 1000);
     } catch (err) {
       console.error('Failed to resume upload:', err);
-      setError('Failed to resume upload');
+      showToast('Failed to resume upload', 'error');
     }
   };
 
@@ -73,9 +77,10 @@ const UploadsList: React.FC = () => {
     try {
       await axios.delete(`${API_BASE}/upload/${uploadId}`);
       setUploads(prev => prev.filter(upload => upload.id !== uploadId));
+      showToast('Upload deleted successfully', 'success');
     } catch (err) {
       console.error('Failed to delete upload:', err);
-      setError('Failed to delete upload');
+      showToast('Failed to delete upload', 'error');
     }
   };
 
@@ -121,12 +126,10 @@ const UploadsList: React.FC = () => {
   if (loading) {
     return (
       <div className="space-y-4">
-        <Card>
-          <CardContent className="flex items-center justify-center p-8">
-            <div className="flex items-center space-x-2">
-              <RefreshCw className="h-4 w-4 animate-spin" />
-              <span>Loading uploads...</span>
-            </div>
+        <Card className="border-2">
+          <CardContent className="flex flex-col items-center justify-center p-12">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600 dark:text-blue-400 mb-4" />
+            <p className="text-gray-600 dark:text-gray-400 font-medium">Loading uploads...</p>
           </CardContent>
         </Card>
       </div>
@@ -136,13 +139,19 @@ const UploadsList: React.FC = () => {
   if (error) {
     return (
       <div className="space-y-4">
-        <Card className="border-destructive">
+        <Card className="border-2 border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10">
           <CardContent className="flex items-center justify-between p-6">
-            <div className="flex items-center space-x-2">
-              <XCircle className="h-4 w-4 text-destructive" />
-              <span className="text-destructive">{error}</span>
+            <div className="flex items-center space-x-3">
+              <div className="rounded-full bg-red-100 dark:bg-red-900/30 p-2">
+                <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <p className="font-semibold text-red-900 dark:text-red-200">Error Loading Uploads</p>
+                <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+              </div>
             </div>
-            <Button onClick={fetchUploads} variant="outline" size="sm">
+            <Button onClick={fetchUploads} variant="outline" size="sm" className="border-red-300 dark:border-red-700">
+              <RefreshCw className="h-4 w-4 mr-2" />
               Try Again
             </Button>
           </CardContent>
@@ -154,37 +163,54 @@ const UploadsList: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <HardDrive className="h-5 w-5" />
-          <h2 className="text-xl font-semibold">Upload History</h2>
-          <span className="text-sm text-muted-foreground">
-            ({uploads.length} {uploads.length === 1 ? 'file' : 'files'})
-          </span>
+        <div>
+          <div className="flex items-center space-x-3">
+            <div className="rounded-lg bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 p-2">
+              <HardDrive className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Upload History</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {uploads.length} {uploads.length === 1 ? 'file' : 'files'} total
+              </p>
+            </div>
+          </div>
         </div>
-        <Button onClick={fetchUploads} variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
+        <Button onClick={fetchUploads} variant="outline" size="sm" className="gap-2">
+          <RefreshCw className="h-4 w-4" />
           Refresh
         </Button>
       </div>
 
       {uploads.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-            <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No uploads yet</h3>
-            <p className="text-muted-foreground">
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center p-12 text-center">
+            <div className="rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 p-6 mb-6">
+              <HardDrive className="h-12 w-12 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">No uploads yet</h3>
+            <p className="text-gray-600 dark:text-gray-400 max-w-sm">
               Start by uploading a file above to see your upload history here.
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4">
-          {uploads.map(upload => (
-            <Card key={upload.id} className="transition-all hover:shadow-md">
+          {uploads.map(upload => {
+            const FileIcon = getFileIcon(upload.filename);
+            const gradientColor = getFileTypeColor(upload.filename);
+            
+            return (
+            <Card key={upload.id} className="group transition-all hover:shadow-lg border-2 hover:border-blue-200 dark:hover:border-blue-800">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-2 min-w-0 flex-1">
-                    <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <div className="flex items-center space-x-3 min-w-0 flex-1">
+                    <div className={cn(
+                      "flex-shrink-0 rounded-lg p-2.5 bg-gradient-to-br shadow-sm",
+                      gradientColor
+                    )}>
+                      <FileIcon className="h-5 w-5 text-white" />
+                    </div>
                     <div className="min-w-0 flex-1">
                       <CardTitle className="text-base truncate" title={upload.filename}>
                         {upload.filename}
@@ -279,7 +305,8 @@ const UploadsList: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

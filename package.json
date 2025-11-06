@@ -1,37 +1,20 @@
 {
-  "name": "file-upload-vercel",
-  "version": "1.0.0",
-  "description": "Distributed File Upload System for Vercel",
-  "main": "index.js",
+  "name": "file-upload-app",
+  "version": "2.0.0",
+  "description": "Distributed File Upload System with Express Backend and React Frontend",
   "scripts": {
-    "build": "npm --prefix frontend run build",
-    "dev": "cd frontend && npx vite",
-    "vercel-build": "cd frontend && npx tsc --noEmit && npx vite build",
-    "start": "cd frontend && npx vite preview",
-    "postinstall": "cd frontend && npm ci"
-  },
-  "dependencies": {
-    "@vercel/node": "^5.3.6",
-    "cors": "^2.8.5",
-    "express": "^4.18.2",
-    "fs-extra": "^11.2.0",
-    "multiparty": "^4.2.3",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7",
-    "uuid": "^9.0.1"
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "build": "npm run build:backend && npm run build:frontend",
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm run preview",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21",
-    "@types/fs-extra": "^11.0.4",
-    "@types/multiparty": "^0.0.36",
-    "@types/node": "^20.11.30",
-    "@types/sqlite3": "^5.1.0",
-    "@types/uuid": "^9.0.8",
-    "autoprefixer": "^10.4.21",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.11",
-    "typescript": "^5.2.2",
-    "vite": "^7.0.6"
+    "concurrently": "^8.2.2"
   },
   "engines": {
     "node": ">=18.x"
