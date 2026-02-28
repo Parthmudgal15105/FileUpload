@@ -5,7 +5,7 @@ import { config, formatFileSize, isValidFileType } from '../config';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { cn } from '../lib/utils';
-import { getFileIcon, getFileTypeColor } from '../lib/fileIcons';
+import { getFileIcon, getFileTypeColor } from '@/lib/fileIcons';
 import { useToast } from './ui/toast';
 
 const API_BASE = config.API_BASE_URL;
